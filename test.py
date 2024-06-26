@@ -44,6 +44,7 @@ def login(driver, wait, user_id, password):
 
             # 輸入使用者ID
             user_id_input = wait.until(EC.presence_of_element_located((By.ID, 'UserID')))
+            user_id_input.clear()
             user_id_input.send_keys(user_id)
 
             # 隨機等待1到3秒
@@ -51,6 +52,7 @@ def login(driver, wait, user_id, password):
 
             # 輸入密碼
             password_input = wait.until(EC.presence_of_element_located((By.ID, 'PWD')))
+            password_input.clear()
             password_input.send_keys(password)
 
             # 隨機等待1到3秒
@@ -73,6 +75,7 @@ def login(driver, wait, user_id, password):
 
             # 輸入驗證碼
             captcha_input = wait.until(EC.presence_of_element_located((By.ID, 'CheckCode')))
+            captcha_input.clear()
             captcha_input.send_keys(captcha_text)
 
             # 隨機等待1到3秒
@@ -94,9 +97,8 @@ def login(driver, wait, user_id, password):
             except:
                 pass
 
-            # 驗證是否登入成功（根據具體情況調整）
-            success_element = driver.find_element(By.XPATH, 'YOUR_SUCCESS_ELEMENT_XPATH')
-            if success_element:
+            # 驗證是否登入成功（檢查當前URL）
+            if driver.current_url == 'https://ntcbadm1.ntub.edu.tw/Portal/indexSTD.aspx':
                 print("登入成功！")
                 return True
             else:
@@ -109,6 +111,35 @@ def login(driver, wait, user_id, password):
     print("達到最大重試次數，登入失敗。")
     return False
 
+def check_absence_records(driver):
+    """檢查曠課紀錄，並將其轉換為列表"""
+    try:
+        driver.get('https://ntcbadm1.ntub.edu.tw/StdAff/STDWeb/ABS_SearchSACP.aspx')
+        print("已跳轉到曠課紀錄頁面")
+        
+        # 等待表格加載
+        wait = WebDriverWait(driver, 10)
+        table = wait.until(EC.presence_of_element_located((By.ID, 'ctl00_ContentPlaceHolder1_GRD')))
+        
+        # 抓取表格中的行
+        rows = table.find_elements(By.TAG_NAME, 'tr')
+        records = []
+
+        # 解析前7行的數據
+        for row in rows[1:8]:  # 跳過表頭，抓取前7行
+            cells = row.find_elements(By.TAG_NAME, 'td')
+            record = [cell.text for cell in cells]
+            records.append(record)
+        
+        # 打印結果
+        for record in records:
+            print(record)
+        
+        return records
+    except Exception as e:
+        print(f"檢查曠課紀錄過程中出現錯誤: {e}")
+        return []
+
 def main():
     driver = init_webdriver(chrome_driver_path)
     driver.get('https://ntcbadm1.ntub.edu.tw/login.aspx')  # 替換為你的登入頁面URL
@@ -116,11 +147,11 @@ def main():
 
     try:
         if login(driver, wait, user_id='n1116441', password='ee25393887'):
-            # 登入成功後的操作
-            pass
+            # 登入成功後檢查曠課紀錄
+            absence_records = check_absence_records(driver)
         else:
             # 登入失敗後的操作
-            pass
+            print("登入失敗，無法檢查曠課紀錄。")
     finally:
         # 關閉瀏覽器
         driver.quit()

@@ -1,0 +1,27 @@
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment and package files
+env/
+venv/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE specific files
+.idea/
+.vscode/
+
+# Logs and databases
+*.log
+*.sqlite3
+
+# Captcha images
+captcha.png
+
+# OS generated files
+.DS_Store
+Thumbs.db

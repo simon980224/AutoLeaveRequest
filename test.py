@@ -101,7 +101,7 @@ def fetch_absence_records(driver):
     """檢查曠課紀錄，並將其轉換為列表"""
     try:
         driver.get('https://ntcbadm1.ntub.edu.tw/StdAff/STDWeb/ABS_SearchSACP.aspx')
-        print("已跳轉到曠課紀錄頁面")
+        print("已跳轉到缺曠頁面")
         
         # 等待表格加載
         wait = WebDriverWait(driver, 10)
@@ -130,7 +130,7 @@ def navigate_to_leave_application_page_and_click_add(driver, record):
     """轉跳到請假網站並點擊新增按鈕，並填寫表單"""
     try:
         driver.get('https://ntcbadm1.ntub.edu.tw/StdAff/STDWeb/ABS0101.aspx')
-        print("已轉跳到請假網站")
+        print("已轉跳到請假頁面")
         wait = WebDriverWait(driver, 10)
         
         # 等待新增按鈕出現並點擊

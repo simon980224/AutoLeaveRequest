@@ -1,5 +1,4 @@
 import os
-import glob
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
@@ -8,12 +7,6 @@ from selenium.webdriver.support import expected_conditions as EC
 import time
 import cv2
 import pytesseract
-
-# 配置ChromeDriver的路徑
-chrome_driver_path = '/Users/chenyaoxuan/Desktop/chromedriver'
-
-# 最大重試次數
-MAX_RETRIES = 3
 
 def init_webdriver(chrome_driver_path):
     """初始化WebDriver"""
@@ -31,11 +24,12 @@ def recognize_captcha(image_path):
     captcha_text = pytesseract.image_to_string(binary, config='--psm 7').strip()
     return captcha_text
 
-def login(driver, wait, user_id, password, captcha_path):
+def login(driver, wait, user_id, password, captcha_path, max_retries):
     """執行登入流程"""
     retries = 0
-    while retries < MAX_RETRIES:
+    while retries < max_retries:
         try:
+            wait = WebDriverWait(driver, 10)
             # 選擇身分別
             identity_select = wait.until(EC.presence_of_element_located((By.ID, 'Type')))
             identity_select.send_keys('學生')  # 根據需要選擇身分別
@@ -57,7 +51,6 @@ def login(driver, wait, user_id, password, captcha_path):
 
             # 識別驗證碼
             captcha_text = recognize_captcha(captcha_image_path)
-            print("識別出的驗證碼是:", captcha_text)
 
             # 刪除舊的驗證碼圖片
             os.remove(captcha_image_path)
@@ -72,36 +65,30 @@ def login(driver, wait, user_id, password, captcha_path):
             login_button.click()
 
             # 等待頁面跳轉（根據具體情況調整）
-            WebDriverWait(driver, 10).until(EC.url_contains('https://ntcbadm1.ntub.edu.tw/Portal/indexSTD.aspx'))
+            wait.until(EC.url_contains('https://ntcbadm1.ntub.edu.tw/Portal/indexSTD.aspx'))
 
             # 檢查是否顯示系統維護信息
             try:
                 maintenance_message = driver.find_element(By.XPATH, '//*[contains(text(), "系統維護")]')
                 if maintenance_message:
-                    print("系統維護中，請稍後再試。")
                     return False
             except:
                 pass
 
             # 驗證是否登入成功（檢查當前URL）
             if driver.current_url == 'https://ntcbadm1.ntub.edu.tw/Portal/indexSTD.aspx':
-                print("登入成功！")
                 return True
             else:
-                print("登入失敗，重試中...")
                 retries += 1
         except Exception as e:
-            print(f"登入過程中出現錯誤: {e}")
             retries += 1
 
-    print("達到最大重試次數，登入失敗。")
     return False
 
 def get_absence_record(driver):
-    """檢查曠課紀錄，並返回第一筆資料（僅限曠課）"""
+    """檢查曠課紀錄"""
     try:
         driver.get('https://ntcbadm1.ntub.edu.tw/StdAff/STDWeb/ABS_SearchSACP.aspx')
-        print("已跳轉到缺曠頁面")
         
         # 等待表格加載
         wait = WebDriverWait(driver, 10)
@@ -112,42 +99,33 @@ def get_absence_record(driver):
             cells = rows[1].find_elements(By.TAG_NAME, 'td')
             record = [cell.text for cell in cells]
             if record[0] == '曠課':
-                print("第一筆曠課紀錄:", record)
                 return record
-            else:
-                print("第一筆紀錄不是曠課")
-                return None
         else:
-            print("沒有找到曠課紀錄")
             return None
     except Exception as e:
-        print(f"檢查曠課紀錄過程中出現錯誤: {e}")
         return None
 
 def absence_record_page(driver):
-    """轉跳到請假網站"""
+    """轉跳請假頁面"""
     try:
         driver.get('https://ntcbadm1.ntub.edu.tw/StdAff/STDWeb/ABS0101.aspx')
-        print("已轉跳到請假頁面")
-        wait = WebDriverWait(driver, 10)
-        
     except Exception as e:
-        print(f"轉跳到請假網站過程中出現錯誤: {e}")
+        pass
 
 def fill_leave_form(driver, record):
-    """轉跳到請假網站並點擊新增按鈕，並填寫表單"""
+    """新增請假表單"""
     try:
+        wait = WebDriverWait(driver, 10)
         # 等待新增按鈕出現並點擊
-        add_button = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.ID, 'REC_Insert')))
+        add_button = wait.until(EC.element_to_be_clickable((By.ID, 'REC_Insert')))
         add_button.click()
-        print("已點擊新增按鈕")
         
         # 切換到iframe
-        WebDriverWait(driver, 10).until(EC.frame_to_be_available_and_switch_to_it((By.ID, 'TB_iframeContent')))
+        wait.until(EC.frame_to_be_available_and_switch_to_it((By.ID, 'TB_iframeContent')))
 
         # 填寫表單
         # 請假日期
-        start_date_input = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, 'SEA_SDate')))
+        start_date_input = wait.until(EC.presence_of_element_located((By.ID, 'SEA_SDate')))
         end_date_input = driver.find_element(By.ID, 'SEA_EDate')
         start_date_input.clear()
         start_date_input.send_keys(record[1])
@@ -173,19 +151,22 @@ def fill_leave_form(driver, record):
         reason_input.clear()
         reason_input.send_keys('公司加班')
         
-        print("表單已填寫完畢")
-        
     except Exception as e:
-        print(f"轉跳到請假網站並填寫表單過程中出現錯誤: {e}")
+        pass
 
 def main():
+    # 配置ChromeDriver的路徑
+    chrome_driver_path = '/Users/chenyaoxuan/Desktop/chromedriver'
+    # 最大重試次數
+    MAX_RETRIES = 3
+    
     captcha_path = '/Users/chenyaoxuan/Downloads'
     driver = init_webdriver(chrome_driver_path)
     driver.get('https://ntcbadm1.ntub.edu.tw/login.aspx')  # 替換為你的登入頁面URL
     wait = WebDriverWait(driver, 10)
 
     try:
-        if login(driver, wait, user_id='n1116441', password='ee25393887', captcha_path=captcha_path):
+        if login(driver, wait, user_id='n1116441', password='ee25393887', captcha_path=captcha_path, max_retries=MAX_RETRIES):
             # 登入成功後檢查曠課紀錄
             first_absence_record = get_absence_record(driver)
             if first_absence_record:
@@ -193,10 +174,11 @@ def main():
                 absence_record_page(driver)
                 # 填寫請假表單
                 fill_leave_form(driver, first_absence_record)
-                # 等待5秒，以便觀察結果
-                time.sleep(5)  
+                # 等待3秒，以便觀察結果
+                time.sleep(3)  
+                print("假單填寫完畢")
             else:
-                print("沒有曠課紀錄或第一筆紀錄不是曠課")
+                print("沒有曠課紀錄")
         else:
             # 登入失敗後的操作
             print("登入失敗，無法檢查曠課紀錄。")

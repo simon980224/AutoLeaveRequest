@@ -8,9 +8,11 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import cv2
 import pytesseract
+from datetime import datetime
 
 # 配置日誌
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+log_path = '/Users/chenyaoxuan/Downloads/automation.log'
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', filename=log_path, filemode='a')
 
 def init_webdriver(chrome_driver_path):
     """初始化WebDriver"""
@@ -142,20 +144,34 @@ def main():
     driver.get('https://ntcbadm1.ntub.edu.tw/login.aspx')
     wait = WebDriverWait(driver, 10)
 
+    start_time = datetime.now()
+    logging.info(f"執行時間: {start_time}")
+
     try:
         if login(driver, wait, user_id=user_id, password=password, captcha_path=captcha_path, max_retries=MAX_RETRIES):
             first_absence_record = get_absence_record(driver, wait)
             if first_absence_record:
                 absence_record_page(driver)
                 fill_leave_form(driver, wait, first_absence_record)
-                time.sleep(3)
-                logging.info("假單填寫完畢")
+                success = True
+                send_content = first_absence_record
             else:
                 logging.info("沒有曠課紀錄")
+                success = False
+                send_content = "沒有曠課紀錄"
         else:
             logging.error("登入失敗。")
+            success = False
+            send_content = "登入失敗"
     finally:
         driver.quit()
+        end_time = datetime.now()
+        elapsed_time = (end_time - start_time).total_seconds()
+        logging.info(f"送出時間: {end_time}")
+        logging.info(f"運行時間: {elapsed_time} 秒")
+        logging.info(f"送出內容: {send_content}")
+        logging.info(f"成功與否: {'成功' if success else '失敗'}")
+        logging.info('-' * 50)
 
 if __name__ == "__main__":
     main()

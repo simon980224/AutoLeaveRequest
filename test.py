@@ -153,7 +153,7 @@ def main():
             else:
                 logging.info("沒有曠課紀錄")
         else:
-            logging.error("登入失敗，無法檢查曠課紀錄。")
+            logging.error("登入失敗。")
     finally:
         driver.quit()
 

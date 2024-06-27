@@ -1,14 +1,15 @@
+import logging
 import os
 import time
-import logging
+from datetime import datetime
+
+import cv2
+import pytesseract
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-import cv2
-import pytesseract
-from datetime import datetime
+from selenium.webdriver.support.ui import WebDriverWait
 
 # 配置日誌
 log_path = '/Users/chenyaoxuan/Downloads/automation.log'

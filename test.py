@@ -31,7 +31,7 @@ def recognize_captcha(image_path):
     captcha_text = pytesseract.image_to_string(binary, config='--psm 7').strip()
     return captcha_text
 
-def perform_login(driver, wait, user_id, password, captcha_path):
+def login(driver, wait, user_id, password, captcha_path):
     """執行登入流程"""
     retries = 0
     while retries < MAX_RETRIES:
@@ -97,8 +97,8 @@ def perform_login(driver, wait, user_id, password, captcha_path):
     print("達到最大重試次數，登入失敗。")
     return False
 
-def fetch_absence_records(driver):
-    """檢查曠課紀錄，並將其轉換為列表"""
+def get_absence_record(driver):
+    """檢查曠課紀錄，並返回第一筆資料（僅限曠課）"""
     try:
         driver.get('https://ntcbadm1.ntub.edu.tw/StdAff/STDWeb/ABS_SearchSACP.aspx')
         print("已跳轉到缺曠頁面")
@@ -107,43 +107,47 @@ def fetch_absence_records(driver):
         wait = WebDriverWait(driver, 10)
         table = wait.until(EC.presence_of_element_located((By.ID, 'ctl00_ContentPlaceHolder1_GRD')))
         
-        # 抓取表格中的行
-        rows = table.find_elements(By.TAG_NAME, 'tr')
-        records = []
-
-        # 解析前7行的數據
-        for row in rows[1:8]:  # 跳過表頭，抓取前7行
-            cells = row.find_elements(By.TAG_NAME, 'td')
+        # 獲取第一筆資料
+        if len(rows := table.find_elements(By.TAG_NAME, 'tr')) > 1:
+            cells = rows[1].find_elements(By.TAG_NAME, 'td')
             record = [cell.text for cell in cells]
-            records.append(record)
-        
-        # 打印結果
-        for record in records:
-            print(record)
-        
-        return records
+            if record[0] == '曠課':
+                print("第一筆曠課紀錄:", record)
+                return record
+            else:
+                print("第一筆紀錄不是曠課")
+                return None
+        else:
+            print("沒有找到曠課紀錄")
+            return None
     except Exception as e:
         print(f"檢查曠課紀錄過程中出現錯誤: {e}")
-        return []
+        return None
 
-def navigate_to_leave_application_page_and_click_add(driver, record):
-    """轉跳到請假網站並點擊新增按鈕，並填寫表單"""
+def absence_record_page(driver):
+    """轉跳到請假網站"""
     try:
         driver.get('https://ntcbadm1.ntub.edu.tw/StdAff/STDWeb/ABS0101.aspx')
         print("已轉跳到請假頁面")
         wait = WebDriverWait(driver, 10)
         
+    except Exception as e:
+        print(f"轉跳到請假網站過程中出現錯誤: {e}")
+
+def fill_leave_form(driver, record):
+    """轉跳到請假網站並點擊新增按鈕，並填寫表單"""
+    try:
         # 等待新增按鈕出現並點擊
-        add_button = wait.until(EC.element_to_be_clickable((By.ID, 'REC_Insert')))
+        add_button = WebDriverWait(driver, 10).until(EC.element_to_be_clickable((By.ID, 'REC_Insert')))
         add_button.click()
         print("已點擊新增按鈕")
         
         # 切換到iframe
-        wait.until(EC.frame_to_be_available_and_switch_to_it((By.ID, 'TB_iframeContent')))
+        WebDriverWait(driver, 10).until(EC.frame_to_be_available_and_switch_to_it((By.ID, 'TB_iframeContent')))
 
         # 填寫表單
         # 請假日期
-        start_date_input = wait.until(EC.presence_of_element_located((By.ID, 'SEA_SDate')))
+        start_date_input = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.ID, 'SEA_SDate')))
         end_date_input = driver.find_element(By.ID, 'SEA_EDate')
         start_date_input.clear()
         start_date_input.send_keys(record[1])
@@ -181,13 +185,18 @@ def main():
     wait = WebDriverWait(driver, 10)
 
     try:
-        if perform_login(driver, wait, user_id='n1116441', password='ee25393887', captcha_path=captcha_path):
+        if login(driver, wait, user_id='n1116441', password='ee25393887', captcha_path=captcha_path):
             # 登入成功後檢查曠課紀錄
-            absence_records = fetch_absence_records(driver)
-            if absence_records:
-                # 轉跳到請假網站並點擊新增按鈕，並填寫表單
-                navigate_to_leave_application_page_and_click_add(driver, absence_records[0])
-                time.sleep(10)  # 等待10秒，以便觀察結果
+            first_absence_record = get_absence_record(driver)
+            if first_absence_record:
+                # 轉跳到請假網站
+                absence_record_page(driver)
+                # 填寫請假表單
+                fill_leave_form(driver, first_absence_record)
+                # 等待5秒，以便觀察結果
+                time.sleep(5)  
+            else:
+                print("沒有曠課紀錄或第一筆紀錄不是曠課")
         else:
             # 登入失敗後的操作
             print("登入失敗，無法檢查曠課紀錄。")

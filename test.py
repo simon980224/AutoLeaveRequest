@@ -11,9 +11,13 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 
+# 全域變數
+CHROME_DRIVER_PATH = os.getenv('CHROME_DRIVER_PATH', '/Users/chenyaoxuan/Desktop/chromedriver')
+CAPTCHA_PATH = os.getenv('CAPTCHA_PATH', '/Users/chenyaoxuan/Downloads')
+LOG_PATH = os.getenv('LOG_PATH', '/Users/chenyaoxuan/Downloads/automation.log')
+
 # 配置日誌
-log_path = '/Users/chenyaoxuan/Downloads/automation.log'
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', filename=log_path, filemode='a')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', filename=LOG_PATH, filemode='a')
 
 def init_webdriver(chrome_driver_path):
     """初始化WebDriver"""
@@ -130,18 +134,18 @@ def fill_leave_form(driver, wait, record):
         reason_input = driver.find_element(By.ID, 'SEA_Note')
         reason_input.clear()
         reason_input.send_keys('公司加班')
+        # TODO: 送出表單
+        # 在這裏填入送出表單的程式碼
     except Exception as e:
         logging.error(f"填寫請假表單過程中出現錯誤: {e}")
 
 def main():
-    chrome_driver_path = os.getenv('CHROME_DRIVER_PATH', '/Users/chenyaoxuan/Desktop/chromedriver')
     MAX_RETRIES = 3
-    captcha_path = os.getenv('CAPTCHA_PATH', '/Users/chenyaoxuan/Downloads')
     
     user_id = os.getenv('USER_ID', 'n1116441')
     password = os.getenv('PASSWORD', 'ee25393887')
     
-    driver = init_webdriver(chrome_driver_path)
+    driver = init_webdriver(CHROME_DRIVER_PATH)
     driver.get('https://ntcbadm1.ntub.edu.tw/login.aspx')
     wait = WebDriverWait(driver, 10)
 
@@ -149,7 +153,7 @@ def main():
     logging.info(f"執行時間: {start_time}")
 
     try:
-        if login(driver, wait, user_id=user_id, password=password, captcha_path=captcha_path, max_retries=MAX_RETRIES):
+        if login(driver, wait, user_id=user_id, password=password, captcha_path=CAPTCHA_PATH, max_retries=MAX_RETRIES):
             first_absence_record = get_absence_record(driver, wait)
             if first_absence_record:
                 absence_record_page(driver)

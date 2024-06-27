@@ -78,9 +78,11 @@ def login(driver, wait, user_id, password, captcha_path, max_retries):
                 return True
             else:
                 retries += 1
+                time.sleep(5)  # 加入短暫的休眠時間
         except Exception as e:
             logging.error(f"登入過程中出現錯誤: {e}")
             retries += 1
+            time.sleep(5)  # 加入短暫的休眠時間
 
     return False
 

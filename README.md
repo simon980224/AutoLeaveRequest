@@ -37,7 +37,7 @@ LeaveMaster是一個使用Selenium和Tesseract OCR自動化請假流程的腳本
     ```
 3. 執行腳本
     ```bash
-    python leavemaster.py
+    python script.py
     ```
 
 ## 注意事項

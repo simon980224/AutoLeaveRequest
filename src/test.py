@@ -13,8 +13,8 @@ from selenium.webdriver.support.ui import WebDriverWait
 
 # 全域變數
 CHROME_DRIVER_PATH = os.getenv('CHROME_DRIVER_PATH', '/Users/chenyaoxuan/Desktop/chromedriver')
-CAPTCHA_PATH = os.getenv('CAPTCHA_PATH', '/Users/chenyaoxuan/Downloads')
-LOG_PATH = os.getenv('LOG_PATH', '/Users/chenyaoxuan/Downloads/automation.log')
+CAPTCHA_PATH = os.getenv('CAPTCHA_PATH', '/Users/chenyaoxuan/Desktop')
+LOG_PATH = os.getenv('LOG_PATH', '/Users/chenyaoxuan/Desktop/automation.log')
 
 # 配置日誌
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', filename=LOG_PATH, filemode='a')
@@ -136,8 +136,8 @@ def fill_leave_form(driver, wait, record):
         reason_input = driver.find_element(By.ID, 'SEA_Note')
         reason_input.clear()
         reason_input.send_keys('公司加班')
-        # TODO: 送出表單
-        # 在這裏填入送出表單的程式碼
+        submit_button = driver.find_element(By.ID, 'REC_Update')
+        submit_button.click()
     except Exception as e:
         logging.error(f"填寫請假表單過程中出現錯誤: {e}")
 
@@ -171,6 +171,7 @@ def main():
             success = False
             send_content = "登入失敗"
     finally:
+        time.sleep(5)  # 加入短暫的休眠時間
         driver.quit()
         end_time = datetime.now()
         elapsed_time = (end_time - start_time).total_seconds()

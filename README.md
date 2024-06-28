@@ -26,7 +26,7 @@ LeaveMaster是一個使用Selenium和Tesseract OCR自動化請假流程的腳本
 
 1. 克隆此倉庫到你的本地機器
     ```bash
-    git clone https://github.com/yourusername/leavemaster.git
+    git clone https://github.com/simon980224/AutoLeaveRequest.git
     cd leavemaster
     ```
 2. 修改腳本中的學號、密碼和請假理由
